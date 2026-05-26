@@ -1,11 +1,20 @@
-// Ported from spot-diff-s2 with minor adjustments — pads to MAX_CONTACTS
-// with demo data so the picker is always full, and never throws.
+// Fetch the player's real Aigram contacts via the canonical platform
+// bridge. Falls back to a small demo list only when running OUTSIDE
+// Aigram (e.g. local `npm run preview`) — in production the bridge is
+// always present and real friends load.
 
 import { useEffect, useState } from 'react';
+import {
+  callAigramAPI,
+  isInAigram,
+  telegramId,
+  type AigramResponse,
+} from '@shared/runtime';
 import type { AigramContact } from '../types';
 
 const MAX_CONTACTS = 6;
 
+/** Local-preview placeholder only. Never reached when running in Aigram. */
 const DEMO_CONTACTS: AigramContact[] = [
   { telegram_id: 'demo1', name: 'Algram',     head_url: '' },
   { telegram_id: 'demo2', name: 'Jenny',      head_url: '' },
@@ -15,104 +24,48 @@ const DEMO_CONTACTS: AigramContact[] = [
   { telegram_id: 'demo6', name: 'Isabel',     head_url: '' },
 ];
 
-function urlParams(): { apiOrigin: string | null; telegramId: string | null } {
-  const p = new URLSearchParams(window.location.search);
-  return {
-    apiOrigin: p.get('api_origin'),
-    telegramId: p.get('telegram_id'),
-  };
+// Raw contact row from /note/telegram/user/contact/list
+interface RawContact {
+  telegram_id: number | string;
+  name?: string;
+  head_url?: string;
 }
 
-function postMessageCall(
-  apiOrigin: string,
-  url: string,
-  timeoutMs = 8000,
-): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    const requestId = crypto.randomUUID();
-    const payload = {
-      url,
-      method: 'GET',
-      data: null,
-      request_id: requestId,
-      emitter: window.location.origin,
-    };
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-
-    const timer = setTimeout(() => {
-      window.removeEventListener('message', handler);
-      reject(new Error('API timeout'));
-    }, timeoutMs);
-
-    function handler(event: MessageEvent) {
-      if (typeof event.data !== 'string') return;
-      if (!event.data.startsWith('callAPIResult-')) return;
-      try {
-        const raw = event.data.slice('callAPIResult-'.length);
-        const result = JSON.parse(decodeURIComponent(escape(atob(raw))));
-        if (result.request_id !== requestId) return;
-        clearTimeout(timer);
-        window.removeEventListener('message', handler);
-        if (!result.success) {
-          reject(new Error(result.error || 'API error'));
-          return;
-        }
-        resolve(result.data);
-      } catch {
-        /* ignore */
-      }
-    }
-
-    window.addEventListener('message', handler);
-    window.parent.postMessage(`callAPI-${encoded}`, apiOrigin);
-  });
-}
-
-async function fetchUserName(
-  apiOrigin: string,
-  telegramId: string,
-): Promise<string | null> {
+async function fetchUserName(tid: string): Promise<string | null> {
   try {
-    const data = (await postMessageCall(
-      apiOrigin,
-      `/note/telegram/user/get/info/by/telegram_id?telegram_id=${telegramId}`,
-      5000,
-    )) as { name?: string } | null;
-    return data?.name || null;
+    const resp = await callAigramAPI<AigramResponse<{ name?: string }>>(
+      `/note/telegram/user/get/info/by/telegram_id?telegram_id=${encodeURIComponent(tid)}`,
+      'GET',
+    );
+    return resp?.data?.name || null;
   } catch {
     return null;
   }
 }
 
-async function fetchContacts(
-  apiOrigin: string,
-  telegramId: string,
-): Promise<AigramContact[]> {
-  const data = (await postMessageCall(
-    apiOrigin,
-    `/note/telegram/user/contact/list?telegram_id=${telegramId}`,
-    10000,
-  )) as Array<{
-    telegram_id: string;
-    name?: string;
-    head_url?: string;
-  }> | null;
+async function fetchContacts(): Promise<AigramContact[]> {
+  if (!telegramId) return [];
 
-  const raw: AigramContact[] = (Array.isArray(data) ? data : [])
-    .slice(0, MAX_CONTACTS)
-    .map((u) => ({
-      telegram_id: String(u.telegram_id),
-      name: u.name || '',
-      head_url: u.head_url || '',
-    }));
+  const resp = await callAigramAPI<AigramResponse<RawContact[]>>(
+    `/note/telegram/user/contact/list?telegram_id=${encodeURIComponent(telegramId)}`,
+    'GET',
+  );
 
-  if (raw.length === 0) return [];
+  const rows: RawContact[] = Array.isArray(resp?.data) ? resp.data : [];
+  const trimmed = rows.slice(0, MAX_CONTACTS).map((u) => ({
+    telegram_id: String(u.telegram_id),
+    name: u.name || '',
+    head_url: u.head_url || '',
+  }));
 
+  if (trimmed.length === 0) return [];
+
+  // Enrich rows that returned without a name via individual lookup
   const enriched = await Promise.all(
-    raw.map(async (contact) => {
-      if (contact.name) return contact;
-      const name = await fetchUserName(apiOrigin, contact.telegram_id);
-      return { ...contact, name: name || contact.telegram_id };
+    trimmed.map(async (c) => {
+      if (c.name) return c;
+      const name = await fetchUserName(c.telegram_id);
+      return { ...c, name: name || c.telegram_id };
     }),
   );
 
@@ -133,38 +86,48 @@ export function useAigramContacts(): UseAigramContactsResult {
   const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    const { apiOrigin, telegramId } = urlParams();
-
-    if (!apiOrigin || !telegramId) {
+    if (!isInAigram) {
+      // Local preview / poster — no bridge available.
       setContacts(DEMO_CONTACTS);
       setIsDemo(true);
       setLoading(false);
       return;
     }
 
-    fetchContacts(apiOrigin, telegramId)
+    let cancelled = false;
+    fetchContacts()
       .then((result) => {
+        if (cancelled) return;
         if (result.length === 0) {
+          // User legitimately has no friends — keep showing demo so the
+          // picker isn't blank.
           setContacts(DEMO_CONTACTS);
           setIsDemo(true);
-        } else {
-          // Pad to MAX_CONTACTS with demo if user has fewer friends
-          const padded = [...result];
-          let i = 0;
-          while (padded.length < MAX_CONTACTS && i < DEMO_CONTACTS.length) {
-            const d = DEMO_CONTACTS[i++];
-            if (!padded.find((c) => c.name === d.name)) padded.push(d);
-          }
-          setContacts(padded.slice(0, MAX_CONTACTS));
-          setIsDemo(false);
+          return;
         }
+        // Pad to MAX_CONTACTS if fewer than 6 real friends
+        const padded = [...result];
+        let i = 0;
+        while (padded.length < MAX_CONTACTS && i < DEMO_CONTACTS.length) {
+          const d = DEMO_CONTACTS[i++];
+          if (!padded.find((c) => c.name === d.name)) padded.push(d);
+        }
+        setContacts(padded.slice(0, MAX_CONTACTS));
+        setIsDemo(false);
       })
       .catch((err: unknown) => {
+        if (cancelled) return;
         setError(err instanceof Error ? err.message : 'unknown');
         setContacts(DEMO_CONTACTS);
         setIsDemo(true);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { contacts, loading, error, isDemo };
