@@ -3,6 +3,7 @@ import Strip from '../components/Strip';
 import Cta from '../components/Cta';
 import Sys from '../components/Sys';
 import type { AigramContact } from '../types';
+import { useLocale } from '../i18n';
 
 interface TargetDetailProps {
   contact: AigramContact;
@@ -15,7 +16,7 @@ export default function TargetDetail({
   onNext,
   onBack,
 }: TargetDetailProps) {
-  // Derive deterministic "file number" from telegram_id so it feels stable.
+  const { t } = useLocale();
   const fileNum = (() => {
     let h = 0;
     for (let i = 0; i < contact.telegram_id.length; i++) {
@@ -27,7 +28,7 @@ export default function TargetDetail({
   return (
     <>
       <Strip
-        status="TARGET LOCKED"
+        status={t('strip.target_locked')}
         right={`FILE · ${fileNum}`}
         onBack={onBack}
       />
@@ -44,7 +45,7 @@ export default function TargetDetail({
           <span className="wus-target__scan" />
         </div>
         <div className="wus-target__name">{contact.name.toUpperCase()}</div>
-        <div className="wus-target__meta">SLEEPER · ROOM 3A · ID {fileNum}</div>
+        <div className="wus-target__meta">{t('detail.meta', { id: fileNum })}</div>
       </div>
 
       <div className="wus-infotable">
@@ -58,21 +59,21 @@ export default function TargetDetail({
         </div>
         <div className="wus-infotable__ic">
           <div className="wus-infotable__k">LAST PING</div>
-          <div className="wus-infotable__v">0:02 AGO</div>
+          <div className="wus-infotable__v">{t('detail.last_ping_value')}</div>
         </div>
         <div className="wus-infotable__ic">
           <div className="wus-infotable__k">TONIGHT</div>
-          <div className="wus-infotable__v">×4 CALLS</div>
+          <div className="wus-infotable__v">{t('detail.tonight_value')}</div>
         </div>
       </div>
 
       <div className="wus-dossier">
-        DOSSIER · DOES NOT HEAR ALARMS<br />
-        HAS 3 PILLOWS · FAN ON HIGH<br />
-        WAKES TO CATS · CAFFEINE TOL · 4
+        {t('detail.dossier_l1')}<br />
+        {t('detail.dossier_l2')}<br />
+        {t('detail.dossier_l3')}
       </div>
 
-      <Cta label="SET  PROTOCOL" onTap={onNext} />
+      <Cta label={t('detail.cta')} onTap={onNext} />
 
       <Sys
         cells={[

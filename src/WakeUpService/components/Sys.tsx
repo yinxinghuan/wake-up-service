@@ -5,10 +5,11 @@ import { playClick } from '../utils/sounds';
 interface SysProps {
   cells: { k: string; v?: ReactNode }[];
   onGear?: () => void;
+  gearLabel?: string;
 }
 
 /** Footer status row. Optional gear button on the right. */
-export default function Sys({ cells, onGear }: SysProps) {
+export default function Sys({ cells, onGear, gearLabel = 'DISPLAY' }: SysProps) {
   return (
     <div className="wus-sys">
       {cells.map((c, i) => (
@@ -32,7 +33,7 @@ export default function Sys({ cells, onGear }: SysProps) {
           }}
         >
           <GearIcon size={11} />
-          DISPLAY
+          {gearLabel}
         </button>
       )}
     </div>

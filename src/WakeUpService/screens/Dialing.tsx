@@ -3,33 +3,37 @@ import { useGameEvent } from '@shared/runtime';
 import LEDPhoto from '../components/LEDPhoto';
 import Strip from '../components/Strip';
 import Sys from '../components/Sys';
-import type { AigramContact, Method } from '../types';
+import type { AigramContact, MethodSpec } from '../types';
 import { playRing, playStamp, playComplete } from '../utils/sounds';
+import { useLocale } from '../i18n';
 
 interface DialingProps {
   target: AigramContact;
-  method: Method;
+  method: MethodSpec;
   onComplete: () => void;
 }
 
 type Phase = 'dialing' | 'connected' | 'stamping' | 'delivered';
 
 const PHASE_TIMINGS: Record<Phase, number> = {
-  dialing: 400,     // 0.0–0.4 "DIALING…"
-  connected: 1600,  // 0.4–2.0 ringbars + 3 ring ticks
-  stamping: 600,    // 2.0–2.6 stamp slam
-  delivered: 900,   // 2.6–3.5 hold
+  dialing: 400,
+  connected: 1600,
+  stamping: 600,
+  delivered: 900,
 };
 
 export default function Dialing({ target, method, onComplete }: DialingProps) {
+  const { t, locale } = useLocale();
   const [phase, setPhase] = useState<Phase>('dialing');
   const { trigger, canEmit } = useGameEvent();
   const firedRef = useRef(false);
 
-  // Build the notify config + fire ONCE on mount.
+  // Fire ONCE on mount with the localized notify payload.
   useEffect(() => {
     if (firedRef.current) return;
     firedRef.current = true;
+
+    const messageTemplate = t(`method.${method.id}.msg`);
 
     const config = {
       actions: [
@@ -40,20 +44,21 @@ export default function Dialing({ target, method, onComplete }: DialingProps) {
             ? { ref_url: method.refUrl, prompt: method.prompt }
             : { prompt: method.prompt },
           message: {
-            template: method.messageTemplate,
+            template: messageTemplate,
             variables: ['sender_name'],
+            locale,
           },
         },
       ],
     };
     trigger('wakeup_sent', config);
-  }, [target.telegram_id, method, trigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Choreograph 3.5s of phases + audio cues
   useEffect(() => {
     const timers: number[] = [];
 
-    // ring ticks during connected phase
     timers.push(window.setTimeout(() => playRing(), 600));
     timers.push(window.setTimeout(() => playRing(), 1100));
     timers.push(window.setTimeout(() => playRing(), 1600));
@@ -91,10 +96,11 @@ export default function Dialing({ target, method, onComplete }: DialingProps) {
 
   const showStamp = phase === 'stamping' || phase === 'delivered';
   const showRingbars = phase === 'dialing' || phase === 'connected';
+  const dialVerb = t(`method.${method.id}.dial`);
 
   return (
     <>
-      <Strip status="DISPATCHING" right="RNG · 04" />
+      <Strip status={t('strip.dispatching')} right="RNG · 04" />
 
       <div className="wus-dial-stage">
         <div className="wus-dial-portrait">
@@ -108,7 +114,7 @@ export default function Dialing({ target, method, onComplete }: DialingProps) {
 
         <div className="wus-dial-target">
           {target.name.toUpperCase()}
-          <small>SLEEPER · ROOM 3A</small>
+          <small>{t('dial.room_label')}</small>
         </div>
 
         {showRingbars && (
@@ -118,22 +124,22 @@ export default function Dialing({ target, method, onComplete }: DialingProps) {
         )}
 
         <div className="wus-dial-msg">
-          {phase === 'dialing' && 'DIALING…'}
-          {phase === 'connected' && `${method.dialVerb}  ENROUTE`}
-          {showStamp && `${method.dialVerb}  DELIVERED`}
+          {phase === 'dialing' && t('dial.dialing')}
+          {phase === 'connected' && t('dial.enroute', { verb: dialVerb })}
+          {showStamp && t('dial.delivered', { verb: dialVerb })}
         </div>
 
         <div className="wus-dial-meta">
-          PAYLOAD · 1.2 MB UPLOADED<br />
-          SIGNAL · 4 BARS · EST. 0:03
+          {t('dial.payload')}<br />
+          {t('dial.signal')}
         </div>
 
         {showStamp && (
           <div
             className={`wus-stamp${!canEmit ? ' wus-stamp--demo' : ''}`}
-            key={phase /* re-trigger anim if phase changes */}
+            key={phase}
           >
-            {canEmit ? 'SIGNAL DISPATCHED' : 'LOCAL TEST ONLY'}
+            {canEmit ? t('dial.stamp.sent') : t('dial.stamp.test')}
           </div>
         )}
       </div>

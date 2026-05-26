@@ -6,6 +6,7 @@ import { methodIcon } from '../utils/icons';
 import type { MethodId, AigramContact } from '../types';
 import { playSelect } from '../utils/sounds';
 import { formatStripTime } from '../utils/time';
+import { useLocale } from '../i18n';
 
 interface MethodPickerProps {
   target: AigramContact;
@@ -24,17 +25,25 @@ export default function MethodPicker({
   onConfirm,
   onBack,
 }: MethodPickerProps) {
+  const { t } = useLocale();
+  const selectedSpec = METHODS.find((m) => m.id === selectedMethod);
+
   return (
     <>
       <Strip
-        status="PROTOCOL CATALOG"
+        status={t('strip.protocol_catalog')}
         right="06 OPTS"
         onBack={onBack}
       />
 
       <div className="wus-h2">
-        CHOOSE  PROTOCOL
-        <small>FOR · {target.name.toUpperCase()} · {formatStripTime(now)}</small>
+        {t('method.h2')}
+        <small>
+          {t('method.subtitle', {
+            name: target.name.toUpperCase(),
+            time: formatStripTime(now),
+          })}
+        </small>
       </div>
 
       <div className="wus-menu">
@@ -56,8 +65,8 @@ export default function MethodPicker({
                 <Icon size={18} />
               </div>
               <div className="wus-method__body">
-                <div className="wus-method__name">{m.name}</div>
-                <div className="wus-method__desc">{m.desc}</div>
+                <div className="wus-method__name">{t(`method.${m.id}.name`)}</div>
+                <div className="wus-method__desc">{t(`method.${m.id}.desc`)}</div>
               </div>
             </button>
           );
@@ -65,14 +74,14 @@ export default function MethodPicker({
       </div>
 
       <Cta
-        label="DISPATCH  NOW"
+        label={t('method.cta')}
         onTap={onConfirm}
         disabled={!selectedMethod}
       />
 
       <Sys
         cells={[
-          { k: 'PROTOCOL', v: selectedMethod ? METHODS.find((x) => x.id === selectedMethod)!.num : '—' },
+          { k: 'PROTOCOL', v: selectedSpec ? selectedSpec.num : '—' },
           { k: 'FEE · $00.00' },
         ]}
       />

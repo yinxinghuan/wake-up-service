@@ -3,12 +3,13 @@ import { useGameEvent } from '@shared/runtime';
 import Strip from '../components/Strip';
 import Cta from '../components/Cta';
 import Sys from '../components/Sys';
-import type { AigramContact, Method } from '../types';
+import type { AigramContact, MethodSpec } from '../types';
 import { formatStripTime } from '../utils/time';
+import { useLocale } from '../i18n';
 
 interface ReceiptProps {
   target: AigramContact;
-  method: Method;
+  method: MethodSpec;
   ts: Date;
   onLobby: () => void;
 }
@@ -16,10 +17,10 @@ interface ReceiptProps {
 const COUNTDOWN_SECONDS = 6;
 
 export default function Receipt({ target, method, ts, onLobby }: ReceiptProps) {
+  const { t } = useLocale();
   const { canEmit } = useGameEvent();
   const [remaining, setRemaining] = useState(COUNTDOWN_SECONDS);
 
-  // Auto-return countdown — bounded setInterval is fine here (post first-touch state)
   useEffect(() => {
     const id = window.setInterval(() => {
       setRemaining((r) => {
@@ -45,38 +46,38 @@ export default function Receipt({ target, method, ts, onLobby }: ReceiptProps) {
 
   return (
     <>
-      <Strip status="RECEIPT" right={`# ${fileNum}`} />
+      <Strip status={t('strip.receipt')} right={`# ${fileNum}`} />
 
       <div className="wus-h2">
-        DISPATCH  RECEIPT
-        <small>RECORDED · {formatStripTime(ts)}</small>
+        {t('receipt.h2')}
+        <small>{t('receipt.recorded', { time: formatStripTime(ts) })}</small>
       </div>
 
       <div className="wus-receipt">
         <div className="wus-receipt__row wus-receipt__row--head">
-          <span>SUBJECT</span>
+          <span>{t('receipt.subject')}</span>
           <span style={{ textAlign: 'right' }}>
             <b>{target.name.toUpperCase()}</b>
           </span>
         </div>
         <div className="wus-receipt__row">
-          <span>PROTOCOL</span>
+          <span>{t('receipt.protocol')}</span>
           <span style={{ textAlign: 'right' }}>
-            <b>{method.shortName}</b>
+            <b>{t(`method.${method.id}.short`)}</b>
           </span>
         </div>
         <div className="wus-receipt__row">
-          <span>SHORTHAND</span>
+          <span>{t('receipt.shorthand')}</span>
           <span style={{ textAlign: 'right' }}>{method.num}</span>
         </div>
         <div className="wus-receipt__row">
-          <span>TIMESTAMP</span>
+          <span>{t('receipt.timestamp')}</span>
           <span style={{ textAlign: 'right' }}>{formatStripTime(ts)}</span>
         </div>
         <div className="wus-receipt__row">
           <span>OP · YOU</span>
           <span style={{ textAlign: 'right' }}>
-            <b>{canEmit ? 'CONFIRMED' : 'DEMO'}</b>
+            <b>{canEmit ? t('receipt.confirmed') : t('receipt.demo_status')}</b>
           </span>
         </div>
 
@@ -84,15 +85,15 @@ export default function Receipt({ target, method, ts, onLobby }: ReceiptProps) {
           className={`wus-stamp${!canEmit ? ' wus-stamp--demo' : ''}`}
           style={{ marginTop: 12 }}
         >
-          {canEmit ? 'SIGNAL DISPATCHED' : 'LOCAL TEST ONLY'}
+          {canEmit ? t('dial.stamp.sent') : t('dial.stamp.test')}
         </div>
 
         <div className="wus-receipt__countdown">
-          RETURN TO LOBBY · {String(remaining).padStart(2, '0')}
+          {t('receipt.countdown', { n: String(remaining).padStart(2, '0') })}
         </div>
       </div>
 
-      <Cta label="LOBBY  NOW" onTap={onLobby} silent />
+      <Cta label={t('receipt.cta')} onTap={onLobby} silent />
 
       <Sys
         cells={[

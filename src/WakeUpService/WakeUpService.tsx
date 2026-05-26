@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import './WakeUpService.less';
 import { ThemeProvider, useTheme } from './theme';
+import { LocaleProvider } from './i18n';
 import { useAigramContacts } from './hooks/useAigramContacts';
 import { useClock } from './hooks/useClock';
 import LCDFrame from './components/LCDFrame';
@@ -12,7 +13,7 @@ import Dialing from './screens/Dialing';
 import Receipt from './screens/Receipt';
 import Settings from './screens/Settings';
 import type { FlowPhase, MethodId, View } from './types';
-import { getMethod } from './utils/methods';
+import { getMethodSpec } from './utils/methods';
 import { unlockAudio } from './utils/sounds';
 
 const LS_LAST_METHOD = 'wakeup_last_method';
@@ -61,7 +62,7 @@ function GameInner() {
   }, [methodId]);
 
   const target = contacts.find((c) => c.telegram_id === targetId) || null;
-  const method = getMethod(methodId);
+  const method = getMethodSpec(methodId);
 
   const startFlow = useCallback(() => {
     setView('flow');
@@ -186,8 +187,10 @@ function GameInner() {
 
 export default function WakeUpService() {
   return (
-    <ThemeProvider>
-      <GameInner />
-    </ThemeProvider>
+    <LocaleProvider>
+      <ThemeProvider>
+        <GameInner />
+      </ThemeProvider>
+    </LocaleProvider>
   );
 }

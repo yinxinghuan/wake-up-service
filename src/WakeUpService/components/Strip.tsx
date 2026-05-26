@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { BackIcon } from '../utils/icons';
 import { playBack } from '../utils/sounds';
+import { useLocale } from '../i18n';
 
 interface StripProps {
   /** Left-hand status label, e.g. "LIVE · ROOM 3A" */
@@ -14,6 +15,7 @@ interface StripProps {
 }
 
 export default function Strip({ status, right, onBack, demo }: StripProps) {
+  const { t } = useLocale();
   return (
     <div className="wus-strip">
       {onBack ? (
@@ -26,7 +28,7 @@ export default function Strip({ status, right, onBack, demo }: StripProps) {
           }}
         >
           <BackIcon size={10} />
-          BACK
+          {t('common.back')}
         </button>
       ) : (
         <span className="wus-strip__lhs">
@@ -34,7 +36,7 @@ export default function Strip({ status, right, onBack, demo }: StripProps) {
           {status}
         </span>
       )}
-      {demo && <span className="wus-strip__demo">· DEMO ·</span>}
+      {demo && <span className="wus-strip__demo">{t('common.demo')}</span>}
       <span>{right}</span>
     </div>
   );

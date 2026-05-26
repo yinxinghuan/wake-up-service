@@ -7,6 +7,7 @@ import Sys from '../components/Sys';
 import LEDPhoto from '../components/LEDPhoto';
 import type { AigramContact } from '../types';
 import { formatStripTime } from '../utils/time';
+import { useLocale } from '../i18n';
 
 interface LobbyProps {
   now: Date;
@@ -23,6 +24,7 @@ export default function Lobby({
   onStart,
   onSettings,
 }: LobbyProps) {
+  const { t } = useLocale();
   const { stats } = useGameStats('wakeup_sent');
   const dispatched = String(stats.day_click_count || 0).padStart(2, '0');
   const total = String(stats.total_click_count || 0).padStart(2, '0');
@@ -30,10 +32,10 @@ export default function Lobby({
   const queue = String(Math.max(0, 12 - (stats.day_user_count || 0))).padStart(2, '0');
 
   const tickerItems = [
-    `QUEUE ${queue}`,
-    `WAKE-UPS TONIGHT · ${total}`,
-    `OPS ONLINE · ${online}`,
-    'OPERATORS STANDING BY · 24/7',
+    t('ticker.queue', { n: queue }),
+    t('ticker.wakeups_tonight', { n: total }),
+    t('ticker.ops_online', { n: online }),
+    t('ticker.standing_by'),
   ];
 
   const feedContacts = contacts.slice(0, 4);
@@ -41,7 +43,7 @@ export default function Lobby({
   return (
     <>
       <Strip
-        status="LIVE · ROOM 3A"
+        status={t('strip.live_room')}
         right={`SYS ${formatStripTime(now)}`}
         demo={isDemo}
       />
@@ -49,22 +51,22 @@ export default function Lobby({
       <LEDClock now={now} />
 
       <div className="wus-title">
-        WAKE-UP
-        <small>DISPATCH SERVICE</small>
+        {t('app.title')}
+        <small>{t('app.subtitle')}</small>
       </div>
 
       <div className="wus-stats">
         <div className="wus-stats__cell">
           <div className="wus-stats__v">{dispatched}</div>
-          <div className="wus-stats__k">DISPATCHED</div>
+          <div className="wus-stats__k">{t('stats.dispatched')}</div>
         </div>
         <div className="wus-stats__cell">
           <div className="wus-stats__v">{total}</div>
-          <div className="wus-stats__k">TOTAL</div>
+          <div className="wus-stats__k">{t('stats.total')}</div>
         </div>
         <div className="wus-stats__cell wus-stats__cell--alt">
           <div className="wus-stats__v">{online}</div>
-          <div className="wus-stats__k">ONLINE</div>
+          <div className="wus-stats__k">{t('stats.online')}</div>
         </div>
       </div>
 
@@ -82,16 +84,18 @@ export default function Lobby({
             ))}
           </div>
           <span style={{ marginLeft: 'auto' }}>
-            {contacts.length > 4 ? `+${contacts.length - 4} ASLEEP` : `${contacts.length} ASLEEP`}
+            {contacts.length > 4
+              ? t('lobby.asleep_more', { n: contacts.length - 4 })
+              : t('lobby.asleep_count', { n: contacts.length })}
           </span>
         </div>
       ) : (
         <div className="wus-feed">
-          <span>· REGISTRY EMPTY ·</span>
+          <span>{t('lobby.registry_empty')}</span>
         </div>
       )}
 
-      <Cta label="PLACE  WAKE-UP  CALL" onTap={onStart} />
+      <Cta label={t('lobby.cta')} onTap={onStart} />
 
       <Sys
         cells={[
@@ -99,6 +103,7 @@ export default function Lobby({
           { k: 'SIG', v: 'OK' },
         ]}
         onGear={onSettings}
+        gearLabel={t('sys.gear')}
       />
     </>
   );
