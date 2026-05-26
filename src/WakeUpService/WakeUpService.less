@@ -134,8 +134,16 @@
 /* ─── DEVICE BEZEL ─── */
 
 .wus-device {
-  width: min(360px, 100vw);
-  height: min(640px, 100vh);
+  // Fill the iframe viewport. On a narrow portrait phone, width = 100vw
+  // and height = 100vh. On wider viewports (desktop browser, landscape
+  // preview), the width is capped so the LCD stays phone-shaped rather
+  // than stretching into a fish-eye rectangle.
+  //
+  // No outer border-radius — the Aigram host already wraps with a
+  // rounded frame; double-rounding clips overflowing toasts.
+  width: 100vw;
+  height: 100vh;
+  max-width: calc(100vh * 9 / 16);
   background: linear-gradient(180deg, var(--bezel-1) 0%, var(--bezel-2) 50%, var(--bezel-3) 100%);
   padding: 14px;
   position: relative;
@@ -145,9 +153,6 @@
     inset 0 1px 0 rgba(255,255,255,0.06),
     inset 0 -2px 0 rgba(0,0,0,0.8);
   transition: background 0.25s;
-}
-@media (min-aspect-ratio: 1/2) {
-  .wus-device { border-radius: 0; }
 }
 .wus-device::before {
   content: "";
