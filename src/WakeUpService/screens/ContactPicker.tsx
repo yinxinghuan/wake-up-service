@@ -33,7 +33,7 @@ export default function ContactPicker({
     <>
       <Strip
         status="SLEEPER REGISTRY"
-        right={`${contacts.length} / 06`}
+        right={contacts.length > 0 ? `${contacts.length} ENTR${contacts.length === 1 ? 'Y' : 'IES'}` : '—'}
         onBack={onBack}
         demo={isDemo}
       />
@@ -45,6 +45,13 @@ export default function ContactPicker({
 
       {loading ? (
         <div className="wus-loading">FETCHING REGISTRY</div>
+      ) : contacts.length === 0 ? (
+        <div className="wus-loading" style={{ flexDirection: 'column', gap: 8, textAlign: 'center', padding: 24 }}>
+          NO SLEEPERS REGISTERED
+          <span style={{ fontSize: 9, letterSpacing: '0.25em', opacity: 0.7 }}>
+            ADD A FRIEND IN AIGRAM TO USE THIS SERVICE
+          </span>
+        </div>
       ) : (
         <div className="wus-menu">
           {contacts.map((c, i) => {

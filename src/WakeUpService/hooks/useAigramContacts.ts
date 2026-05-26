@@ -98,28 +98,18 @@ export function useAigramContacts(): UseAigramContactsResult {
     fetchContacts()
       .then((result) => {
         if (cancelled) return;
-        if (result.length === 0) {
-          // User legitimately has no friends — keep showing demo so the
-          // picker isn't blank.
-          setContacts(DEMO_CONTACTS);
-          setIsDemo(true);
-          return;
-        }
-        // Pad to MAX_CONTACTS if fewer than 6 real friends
-        const padded = [...result];
-        let i = 0;
-        while (padded.length < MAX_CONTACTS && i < DEMO_CONTACTS.length) {
-          const d = DEMO_CONTACTS[i++];
-          if (!padded.find((c) => c.name === d.name)) padded.push(d);
-        }
-        setContacts(padded.slice(0, MAX_CONTACTS));
+        // Show ONLY the user's real contacts. Don't pad with demo names —
+        // mixing real + fake friends is worse than showing a short list
+        // or an empty state.
+        setContacts(result);
         setIsDemo(false);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'unknown');
-        setContacts(DEMO_CONTACTS);
-        setIsDemo(true);
+        // Hard failure (network / API down) — show empty list, not demo.
+        setContacts([]);
+        setIsDemo(false);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

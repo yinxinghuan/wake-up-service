@@ -68,20 +68,28 @@ export default function Lobby({
         </div>
       </div>
 
-      <div className="wus-feed">
-        <div className="wus-feed__stack">
-          {feedContacts.map((c) => (
-            <LEDPhoto
-              key={c.telegram_id}
-              src={c.head_url}
-              fallback={c.name}
-              size="mini"
-              alt={c.name}
-            />
-          ))}
+      {feedContacts.length > 0 ? (
+        <div className="wus-feed">
+          <div className="wus-feed__stack">
+            {feedContacts.map((c) => (
+              <LEDPhoto
+                key={c.telegram_id}
+                src={c.head_url}
+                fallback={c.name}
+                size="mini"
+                alt={c.name}
+              />
+            ))}
+          </div>
+          <span style={{ marginLeft: 'auto' }}>
+            {contacts.length > 4 ? `+${contacts.length - 4} ASLEEP` : `${contacts.length} ASLEEP`}
+          </span>
         </div>
-        <span style={{ marginLeft: 'auto' }}>+{Math.max(0, contacts.length - 4)} ASLEEP</span>
-      </div>
+      ) : (
+        <div className="wus-feed">
+          <span>· REGISTRY EMPTY ·</span>
+        </div>
+      )}
 
       <Cta label="PLACE  WAKE-UP  CALL" onTap={onStart} />
 
