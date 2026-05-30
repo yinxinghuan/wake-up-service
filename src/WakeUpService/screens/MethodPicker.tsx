@@ -54,7 +54,9 @@ export default function MethodPicker({
             <button
               key={m.id}
               className={`wus-method${sel ? ' wus-method--sel' : ''}`}
-              onPointerDown={(e) => {
+              // onClick — methods list scrolls; pointerdown would select
+              // mid-scroll. See scroll-vs-click skill.
+              onClick={(e) => {
                 e.preventDefault();
                 playSelect();
                 onSelect(m.id);

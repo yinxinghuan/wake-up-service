@@ -70,7 +70,9 @@ export default function ContactPicker({
               <button
                 key={c.telegram_id}
                 className={`wus-contact${sel ? ' wus-contact--sel' : ''}`}
-                onPointerDown={(e) => {
+                // onClick — contact list scrolls; pointerdown would select
+                // mid-scroll. See scroll-vs-click skill.
+                onClick={(e) => {
                   e.preventDefault();
                   playSelect();
                   onSelect(c.telegram_id);
