@@ -23,7 +23,7 @@ const PHASE_TIMINGS: Record<Phase, number> = {
 };
 
 export default function Dialing({ target, method, onComplete }: DialingProps) {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const [phase, setPhase] = useState<Phase>('dialing');
   const { trigger, canEmit } = useGameEvent();
   const firedRef = useRef(false);
@@ -35,23 +35,20 @@ export default function Dialing({ target, method, onComplete }: DialingProps) {
 
     const messageTemplate = t(`method.${method.id}.msg`);
 
-    const config = {
-      actions: [
-        {
-          type: 'notify',
-          target_user_id: target.telegram_id,
-          image: method.refUrl
-            ? { ref_url: method.refUrl, prompt: method.prompt }
-            : { prompt: method.prompt },
-          message: {
-            template: messageTemplate,
-            variables: ['sender_name'],
-            locale,
-          },
-        },
-      ],
+    // Spec: image is optional, but if present BOTH ref_url and prompt are
+    // required. Drop image entirely when we have no ref frame for the method.
+    const action: Record<string, unknown> = {
+      type: 'notify',
+      target_user_id: target.telegram_id,
+      message: {
+        template: messageTemplate,
+        variables: ['sender_name'],
+      },
     };
-    trigger('wakeup_sent', config);
+    if (method.refUrl) {
+      action.image = { ref_url: method.refUrl, prompt: method.prompt };
+    }
+    trigger('wakeup_sent', { actions: [action] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
