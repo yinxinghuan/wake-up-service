@@ -366,7 +366,7 @@
 
 /* ─── STATS ─── */
 
-.wus-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin: 10px 0; }
+.wus-stats { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 6px; margin: 10px 0; }
 .wus-stats__cell {
   text-align: center;
   padding: 5px 0 4px;
@@ -675,7 +675,7 @@
 }
 
 .wus-infotable {
-  display: grid; grid-template-columns: 1fr 1fr;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 4px 8px;
   margin: 8px 0;
   font-family: var(--font-body);
@@ -991,7 +991,7 @@
 }
 .wus-receipt__row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   width: 100%;
   font-family: 'Share Tech Mono', monospace;
   font-size: 10px;
